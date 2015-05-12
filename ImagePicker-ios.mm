@@ -6,7 +6,7 @@
 
 #import "ImagePicker.h"
 #import "ImagePicker-ios.h"
-
+#import "ImagePickerBase64-ios-mac.h"
 #include "cocos2d.h"
 
 using namespace cocos2d;
@@ -29,30 +29,26 @@ using namespace cocos2d;
 
 -(void) imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info
 {
+    UIImage *img = [info objectForKey:UIImagePickerControllerOriginalImage];
+    NSData *imgData = UIImageJPEGRepresentation(img, 0.80);
+    
+    NSUInteger len = [imgData length];
+    
+    Byte *byteData = (Byte*)malloc(len);
+    memcpy(byteData, [imgData bytes], len);
+    
     Image *image = new Image();
+    image->initWithImageData(byteData, len);
+    free(byteData);
     
-    @autoreleasepool
-    {
-        UIImage *img = [info objectForKey:UIImagePickerControllerOriginalImage];
-        NSData *imgData = UIImagePNGRepresentation(img);
-        NSUInteger len = [imgData length];
-        
-        Byte *byteData = (Byte*)malloc(len);
-        memcpy(byteData, [imgData bytes], len);
+    NSString *base64ImageString = [Base64 encode:imgData ];
     
-        image->initWithImageData(byteData, len);
-        
-        free(byteData);
-    }
+    Texture2D* texture = new Texture2D();
+    texture->initWithImage(image);
+    texture->autorelease();
+    image->release();
     
-    Director::getInstance()->getScheduler()->performFunctionInCocosThread([image]{
-        Texture2D* texture = new Texture2D();
-        texture->initWithImage(image);
-        texture->autorelease();
-        image->release();
-        
-        ImagePicker::getInstance()->finishImage(texture);
-    });
+    ImagePicker::getInstance()->finishImage(texture, std::string([base64ImageString UTF8String]));
     
     [picker.view removeFromSuperview];
     [picker release];
@@ -60,7 +56,7 @@ using namespace cocos2d;
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker{
     Director::getInstance()->getScheduler()->performFunctionInCocosThread([]{
-        ImagePicker::getInstance()->finishImage(nullptr);
+        ImagePicker::getInstance()->finishImage(nullptr, std::string());
     });
     [picker.view removeFromSuperview];
     [picker release];

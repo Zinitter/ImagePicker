@@ -17,10 +17,13 @@ The origin project is https://github.com/Losiowaty/ImagePicker, and I clear the 
 - put Android support together
 - take advantage of ccx 3.5 API
 - Javascript Binding (lua binding to be done)
+- return base64 image data (Mac/iOS/Android) by Zinitter
 
 The image is loaded by platform API and deliveried to ccx in memory directly. No repeated IO is needed.
 
 usage example screenshots: http://qiankanglai.me/project/2014/04/14/cocos2dx-ImagePicker/
+
+
 
 Guide
 =====

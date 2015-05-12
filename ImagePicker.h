@@ -2,6 +2,7 @@
 #define __ImagePicker__ImagePicker__
 
 #include "platform/CCPlatformMacros.h"
+#include <string>
 
 NS_CC_BEGIN
 
@@ -9,7 +10,7 @@ class Texture2D;
 
 class ImagePickerDelegate {
 public:
-    virtual void didFinishPickingWithResult(Texture2D* result) = 0;
+    virtual void didFinishPickingWithResult(Texture2D *image, std::string imageString) = 0;
     virtual ~ImagePickerDelegate() {};
 };
 
@@ -19,7 +20,7 @@ public:
     static ImagePicker *getInstance();
     
     void pickImage(ImagePickerDelegate *delegate);
-    void finishImage(Texture2D *image);
+    void finishImage(Texture2D *image, std::string imageString);
 private:
     ImagePickerDelegate *_delegate;
 };

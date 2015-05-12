@@ -28,8 +28,8 @@ void ImagePicker::pickImage(ImagePickerDelegate *delegate) {
     ImagePickerImpl::openImage();
 }
 
-void ImagePicker::finishImage(cocos2d::Texture2D *image){
+void ImagePicker::finishImage(Texture2D *image, std::string imageString){
     if(_delegate != nullptr){
-        _delegate->didFinishPickingWithResult(image);
+        _delegate->didFinishPickingWithResult(image, imageString);
     }
 }

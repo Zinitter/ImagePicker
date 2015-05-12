@@ -14,27 +14,34 @@ using namespace cocos2d;
 #include "jni/JniHelper.h"
 
 extern "C" {
-    void Java_org_cocos2dx_lib_Cocos2dxImagePicker_ImagePickerResult(JNIEnv *env, jobject thiz, jbyteArray array)
+    void Java_org_cocos2dx_lib_Cocos2dxImagePicker_ImagePickerResult(JNIEnv *env, jobject thiz, jbyteArray array, jstring imageString)
     {
-        if(array != NULL){
-        	jsize lengthOfArray = env->GetArrayLength(array);
-        	jbyte* bufferPtr = env->GetByteArrayElements(array, NULL);
+        if(array != NULL)
+        {
+            jsize lengthOfArray = env->GetArrayLength(array);
+            jbyte* bufferPtr = env->GetByteArrayElements(array, NULL);
             Image *image = new Image();
             image->initWithImageData((unsigned char*)bufferPtr, lengthOfArray);
-        	env->ReleaseByteArrayElements(array, bufferPtr, 0);  
-
-            Director::getInstance()->getScheduler()->performFunctionInCocosThread([image]{
+            env->ReleaseByteArrayElements(array, bufferPtr, 0);
+            
+            Director::getInstance()->getScheduler()->performFunctionInCocosThread([image, imageString, env]
+            {
                 Texture2D* texture = new Texture2D();
                 texture->initWithImage(image);
                 texture->autorelease();
                 image->release();
 
-                ImagePicker::getInstance()->finishImage(texture);
+                const char *nativeString = env->GetStringUTFChars(imageString, JNI_FALSE);
+                
+                std::string imageData = nativeString;
+   
+                ImagePicker::getInstance()->finishImage(texture, imageData);
+                env->ReleaseStringUTFChars(imageString, nativeString);
             });
         }
         else{
             Director::getInstance()->getScheduler()->performFunctionInCocosThread([]{
-                ImagePicker::getInstance()->finishImage(nullptr);
+                ImagePicker::getInstance()->finishImage(nullptr, std::string());
             });
         }
     }
@@ -63,7 +70,7 @@ void ImagePickerImpl::openImage()
         t.env->DeleteLocalRef(t.classID);
     }
     else
-        ImagePicker::getInstance()->finishImage(nullptr);
+        ImagePicker::getInstance()->finishImage(nullptr, std::string());
 #elif (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
 	auto glView = Director::getInstance()->getOpenGLView();
     HWND hwnd = glView->getWin32Window();
@@ -90,10 +97,10 @@ void ImagePickerImpl::openImage()
 		WideCharToMultiByte(CP_ACP,0,szFile,-1, temp,256, &DefChar, NULL);
         
 		Texture2D* texture = Director::getInstance()->getTextureCache()->addImage(std::string(temp));
-		ImagePicker::getInstance()->finishImage(texture);
+		ImagePicker::getInstance()->finishImage(texture, std::string());
 	}
 	else{
-		ImagePicker::getInstance()->finishImage(nullptr);
+		ImagePicker::getInstance()->finishImage(nullptr, std::string());
 	}
 #elif (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
 	CoreApplication::MainView->CoreWindow->Dispatcher->RunAsync(
@@ -117,7 +124,7 @@ void ImagePickerImpl::openImage()
 			if (file == nullptr)
 			{
 				Director::getInstance()->getScheduler()->performFunctionInCocosThread([]{
-					ImagePicker::getInstance()->finishImage(nullptr);
+					ImagePicker::getInstance()->finishImage(nullptr, std::string());
 				});
 				cancel_current_task();
 			}
@@ -140,13 +147,13 @@ void ImagePickerImpl::openImage()
 				texture->autorelease();
 				image->release();
 
-				ImagePicker::getInstance()->finishImage(texture);
+				ImagePicker::getInstance()->finishImage(texture, std::string());
 			});
 		});
 #endif
 	}));
 #else
     CCLOG("ImagePickerImpl: unsupported yet");
-    ImagePicker::getInstance()->finishImage(nullptr);
+    ImagePicker::getInstance()->finishImage(nullptr, std::string());
 #endif
 }

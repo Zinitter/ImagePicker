@@ -6,21 +6,34 @@ class JSBImagePickerDelegate : public cocos2d::ImagePickerDelegate {
 public:
     JSBImagePickerDelegate()
     {};
-    virtual void didFinishPickingWithResult(cocos2d::Texture2D* result)
+    
+    virtual void didFinishPickingWithResult(cocos2d::Texture2D* result, std::string imageString)
     {
         js_proxy_t* p = jsb_get_native_proxy(this);
-        jsval data;
-        if(result == nullptr)
+        
+        if((result == nullptr) || imageString.empty())
         {
-            ScriptingCore::getInstance()->executeFunctionWithOwner(OBJECT_TO_JSVAL(p->obj), "didFinishPickingWithResult", 0, &data);
+            jsval finalData;
+            ScriptingCore::getInstance()->executeFunctionWithOwner(OBJECT_TO_JSVAL(p->obj), "didFinishPickingWithResult", 0, &finalData);
+            
             return;
         }
-        
-        js_proxy_t *jsProxy = js_get_or_create_proxy<cocos2d::Texture2D>(ScriptingCore::getInstance()->getGlobalContext(), result);
-        data = OBJECT_TO_JSVAL(jsProxy->obj);
-        
-        ScriptingCore::getInstance()->executeFunctionWithOwner(OBJECT_TO_JSVAL(p->obj), "didFinishPickingWithResult", 1, &data);
+        else
+        {
+            js_proxy_t *jsProxy = js_get_or_create_proxy<cocos2d::Texture2D>(ScriptingCore::getInstance()->getGlobalContext(), result);
+            
+            jsval Texture2DValue = OBJECT_TO_JSVAL(jsProxy->obj);
+            jsval imageStringValue = std_string_to_jsval(ScriptingCore::getInstance()->getGlobalContext(), imageString);
+            
+            jsval finalData[2] = {
+                Texture2DValue,
+                imageStringValue
+            };
+            
+            ScriptingCore::getInstance()->executeFunctionWithOwner(OBJECT_TO_JSVAL(p->obj), "didFinishPickingWithResult", 2, finalData);
+        }
     }
+
     virtual ~JSBImagePickerDelegate()
     {}
 };
@@ -75,8 +88,9 @@ bool js_cocos2dx_extension_ImagePickerDelegate_didFinishPickingWithResult(JSCont
     js_proxy_t *proxy = jsb_get_js_proxy(obj);
     JSBImagePickerDelegate* cobj = (JSBImagePickerDelegate *)(proxy ? proxy->ptr : NULL);
     JSB_PRECONDITION2( cobj, cx, false, "js_cocos2dx_extension_ImagePickerDelegate_didFinishPickingWithResult : Invalid Native Object");
-    if (argc == 1) {
+    if (argc == 2) {
         cocos2d::Texture2D* arg0;
+        std::string arg1;
         do {
             if (!args.get(0).isObject()) { ok = false; break; }
             js_proxy_t *jsProxy;
@@ -85,13 +99,14 @@ bool js_cocos2dx_extension_ImagePickerDelegate_didFinishPickingWithResult(JSCont
             arg0 = (cocos2d::Texture2D*)(jsProxy ? jsProxy->ptr : NULL);
             JSB_PRECONDITION2( arg0, cx, false, "Invalid Native Object");
         } while (0);
+        ok &= jsval_to_std_string(cx, args.get(1), &arg1);
         JSB_PRECONDITION2(ok, cx, false, "js_cocos2dx_extension_ImagePickerDelegate_didFinishPickingWithResult : Error processing arguments");
-        cobj->didFinishPickingWithResult(arg0);
+        cobj->didFinishPickingWithResult(arg0, arg1);
         args.rval().setUndefined();
         return true;
     }
-
-    JS_ReportError(cx, "js_cocos2dx_extension_ImagePickerDelegate_didFinishPickingWithResult : wrong number of arguments: %d, was expecting %d", argc, 1);
+    
+    JS_ReportError(cx, "js_cocos2dx_extension_ImagePickerDelegate_didFinishPickingWithResult : wrong number of arguments: %d, was expecting %d", argc, 2);
     return false;
 }
 bool js_cocos2dx_extension_ImagePickerDelegate_constructor(JSContext *cx, uint32_t argc, jsval *vp)
@@ -225,10 +240,11 @@ bool js_cocos2dx_extension_ImagePicker_finishImage(JSContext *cx, uint32_t argc,
     bool ok = true;
     JS::RootedObject obj(cx, args.thisv().toObjectOrNull());
     js_proxy_t *proxy = jsb_get_js_proxy(obj);
-    cocos2d::ImagePicker* cobj = (cocos2d::ImagePicker *)(proxy ? proxy->ptr : NULL);
+    JSBImagePickerDelegate* cobj = (JSBImagePickerDelegate *)(proxy ? proxy->ptr : NULL);
     JSB_PRECONDITION2( cobj, cx, false, "js_cocos2dx_extension_ImagePicker_finishImage : Invalid Native Object");
-    if (argc == 1) {
+    if (argc == 2) {
         cocos2d::Texture2D* arg0;
+        std::string arg1;
         do {
             if (!args.get(0).isObject()) { ok = false; break; }
             js_proxy_t *jsProxy;
@@ -237,13 +253,14 @@ bool js_cocos2dx_extension_ImagePicker_finishImage(JSContext *cx, uint32_t argc,
             arg0 = (cocos2d::Texture2D*)(jsProxy ? jsProxy->ptr : NULL);
             JSB_PRECONDITION2( arg0, cx, false, "Invalid Native Object");
         } while (0);
+        ok &= jsval_to_std_string(cx, args.get(1), &arg1);
         JSB_PRECONDITION2(ok, cx, false, "js_cocos2dx_extension_ImagePicker_finishImage : Error processing arguments");
-        cobj->finishImage(arg0);
+        cobj->didFinishPickingWithResult(arg0, arg1);
         args.rval().setUndefined();
         return true;
     }
-
-    JS_ReportError(cx, "js_cocos2dx_extension_ImagePicker_finishImage : wrong number of arguments: %d, was expecting %d", argc, 1);
+    
+    JS_ReportError(cx, "js_cocos2dx_extension_ImagePicker_finishImage : wrong number of arguments: %d, was expecting %d", argc, 2);
     return false;
 }
 bool js_cocos2dx_extension_ImagePicker_getInstance(JSContext *cx, uint32_t argc, jsval *vp)
@@ -310,7 +327,7 @@ void js_cocos2d_ImagePicker_finalize(JSFreeOp *fop, JSObject *obj) {
 }
 
 void js_register_cocos2dx_extension_ImagePicker(JSContext *cx, JS::HandleObject global) {
-    jsb_cocos2d_ImagePicker_class = (JSClass *)calloc(1, sizeof(JSClass));
+    jsb_cocos2d_ImagePicker_class = (JSClass *)calloc(2, sizeof(JSClass));
     jsb_cocos2d_ImagePicker_class->name = "ImagePicker";
     jsb_cocos2d_ImagePicker_class->addProperty = JS_PropertyStub;
     jsb_cocos2d_ImagePicker_class->delProperty = JS_DeletePropertyStub;
@@ -329,7 +346,7 @@ void js_register_cocos2dx_extension_ImagePicker(JSContext *cx, JS::HandleObject 
 
     static JSFunctionSpec funcs[] = {
         JS_FN("pickImage", js_cocos2dx_extension_ImagePicker_pickImage, 1, JSPROP_PERMANENT | JSPROP_ENUMERATE),
-        JS_FN("finishImage", js_cocos2dx_extension_ImagePicker_finishImage, 1, JSPROP_PERMANENT | JSPROP_ENUMERATE),
+        JS_FN("finishImage", js_cocos2dx_extension_ImagePicker_finishImage, 2, JSPROP_PERMANENT | JSPROP_ENUMERATE),
         JS_FS_END
     };
 

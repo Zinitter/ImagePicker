@@ -4,6 +4,7 @@
 
 #include "ImagePicker.h"
 #include "ImagePickerImpl.h"
+#import "ImagePickerBase64-ios-mac.h"
 
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
 #include "ImagePicker-ios.h"
@@ -32,16 +33,22 @@ void ImagePickerImpl::openImage()
             if([files count] > 0)
             {
                 NSString* path = [[files objectAtIndex:0] path];
+
+                NSData *imageData = [NSData dataWithContentsOfFile:path];
+                
+                NSString *base64ImageString = [Base64 encode:imageData];
+   
                 Texture2D* texture = Director::getInstance()->getTextureCache()->addImage(std::string([path UTF8String]));
-                ImagePicker::getInstance()->finishImage(texture);
+                ImagePicker::getInstance()->finishImage(texture, std::string([base64ImageString UTF8String]));
+
                 return;
             }
         }
-        ImagePicker::getInstance()->finishImage(nullptr);
+        ImagePicker::getInstance()->finishImage(nullptr, std::string());
     }
 #else
     CCLOG("ImagePickerImpl: unsupported yet");
-    ImagePicker::getInstance()->finishImage(nullptr);
+    ImagePicker::getInstance()->finishImage(nullptr, std::string());
 #endif
 }
 

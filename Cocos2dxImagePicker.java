@@ -44,15 +44,20 @@ public class Cocos2dxImagePicker implements OnActivityResultListener{
                 while ((len = is.read(buffer)) != -1) {
                     byteBuffer.write(buffer, 0, len);
                 }
+                
                 is.close();
-                ImagePickerResult(byteBuffer.toByteArray());
+
+                String imageBase64 = Base64.encodeBytes(byteBuffer.toByteArray());
+
+                ImagePickerResult(byteBuffer.toByteArray(), imageBase64);
+                
                 return true;
             } catch (Exception e) {
             }
         }
-        ImagePickerResult(null);
+        ImagePickerResult(null, null);
         return false;
     }
 
-    public native void ImagePickerResult(final byte[] imagedata);
+    public native void ImagePickerResult(final byte[] imagedata, String imageString);
 }
