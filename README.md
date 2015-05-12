@@ -37,12 +37,14 @@ Add the following sources into project:
 - ImagePicker.h, ImagePicker.cpp
 - ImagePickerImpl.h, ImagePickerImpl.mm
 - ImagePicker-ios.h, ImagePicker-ios.mm (iOS only)
+- ImagePickerBase64-ios-mac.h, ImagePickerBase64-ios-mac.m
 
 2. Android/Win32/Win8.1
 
 - ImagePicker.h, ImagePicker.cpp
 - ImagePickerImpl.h, ImagePickerImpl.cpp
 - Cocos2dxImagePicker.java (Android only)
+- Base64.java (Android only)
 - App.xaml.cs (Win8.1 phone version only)
 
 3. JSB
@@ -58,7 +60,7 @@ Just call `ImagePicker::getInstance()->pickImage()` and pass in your delegate. I
 For cocos2d-JS users: add `sc->addRegisterCallback(register_all_cocos2dx_extension_ImagePicker);` in AppDelegate.cpp,
 
     var delegator = new jsb.ImagePickerDelegate();
-    delegator.didFinishPickingWithResult = function(texture){
+    delegator.didFinishPickingWithResult = function(texture, base64Data){
         if(texture) {
             var sprite = cc.Sprite.createWithTexture(texture);
             var winSize = cc.director.getWinSize();
